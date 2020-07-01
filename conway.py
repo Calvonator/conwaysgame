@@ -1,8 +1,8 @@
 import arcade
 
 #Number of rows/columns in the grid
-ROW_COUNT = 25
-COLUMN_COUNT = 25
+ROW_COUNT = 50
+COLUMN_COUNT = 50
 
 #The width, height and margin of individual cells
 WIDTH = 15
@@ -14,6 +14,88 @@ SCREEN_HEIGHT = (HEIGHT + MARGIN) * ROW_COUNT + MARGIN
 
 SCREEN_TITLE = "Conway's Game Of Life"
 
+
+class TextButton:
+    """ Text-based button """
+
+    def __init__(self,
+                 center_x, center_y,
+                 width, height,
+                 text,
+                 font_size=18,
+                 font_face="Arial",
+                 face_color=arcade.color.LIGHT_GRAY,
+                 highlight_color=arcade.color.WHITE,
+                 shadow_color=arcade.color.GRAY,
+                 button_height=2):
+        self.center_x = center_x
+        self.center_y = center_y
+        self.width = width
+        self.height = height
+        self.text = text
+        self.font_size = font_size
+        self.font_face = font_face
+        self.pressed = False
+        self.face_color = face_color
+        self.highlight_color = highlight_color
+        self.shadow_color = shadow_color
+        self.button_height = button_height
+
+    def draw(self):
+        """ Draw the button """
+        arcade.draw_rectangle_filled(self.center_x, self.center_y, self.width,
+                                     self.height, self.face_color)
+
+        if not self.pressed:
+            color = self.shadow_color
+        else:
+            color = self.highlight_color
+
+        # Bottom horizontal
+        arcade.draw_line(self.center_x - self.width / 2, self.center_y - self.height / 2,
+                         self.center_x + self.width / 2, self.center_y - self.height / 2,
+                         color, self.button_height)
+
+        # Right vertical
+        arcade.draw_line(self.center_x + self.width / 2, self.center_y - self.height / 2,
+                         self.center_x + self.width / 2, self.center_y + self.height / 2,
+                         color, self.button_height)
+
+        if not self.pressed:
+            color = self.highlight_color
+        else:
+            color = self.shadow_color
+
+        # Top horizontal
+        arcade.draw_line(self.center_x - self.width / 2, self.center_y + self.height / 2,
+                         self.center_x + self.width / 2, self.center_y + self.height / 2,
+                         color, self.button_height)
+
+        # Left vertical
+        arcade.draw_line(self.center_x - self.width / 2, self.center_y - self.height / 2,
+                         self.center_x - self.width / 2, self.center_y + self.height / 2,
+                         color, self.button_height)
+
+        x = self.center_x
+        y = self.center_y
+        if not self.pressed:
+            x -= self.button_height
+            y += self.button_height
+
+        arcade.draw_text(self.text, x, y,
+                         arcade.color.BLACK, font_size=self.font_size,
+                         width=self.width, align="center",
+                         anchor_x="center", anchor_y="center")
+
+    def on_press(self):
+        self.pressed = True
+
+    def on_release(self):
+        self.pressed = False
+
+
+
+
 #Class used for generating the starting grid used by the Conway game class
 class MyBoard(arcade.Window):
 
@@ -23,6 +105,8 @@ class MyBoard(arcade.Window):
         super().__init__(width, height, title)
 
         self.grid = [] #[[[] for row in range(ROW_COUNT)] for col in range(COLUMN_HEIGHT)]
+
+
 
         for row in range(ROW_COUNT):
 
@@ -84,17 +168,59 @@ class MyBoard(arcade.Window):
         self.grid_sprite_list.draw()
 
 
+def startingBoard():
+    grid = MyBoard(SCREEN_WIDTH, SCREEN_HEIGHT, "Conway's Game of Life | Starting Grid")
+    arcade.run()
+    return grid.grid
 
-#Change to MyBoard after testing (class is used for the actual conway game)
-class MyConway(arcade.Window):
 
+class NextButton(TextButton):
+    
+    def __init__(self, center_x, center_y, action_function):
+        super().__init__(center_x, center_y, 100, 40, "Start", 18, "Arial")
+        self.action_function = action_function
+
+    def on_release(self):
+        super().on_release()
+        self.action_function()
+
+
+#Button Stuff
+def check_mouse_press_for_buttons(x, y, button_list):
+    """ Given an x, y, see if we need to register any button clicks. """
+    for button in button_list:
+        if x > button.center_x + button.width / 2:
+            continue
+        if x < button.center_x - button.width / 2:
+            continue
+        if y > button.center_y + button.height / 2:
+            continue
+        if y < button.center_y - button.height / 2:
+            continue
+        button.on_press()
+
+
+def check_mouse_release_for_buttons(_x, _y, button_list):
+    """ If a mouse button has been released, see if we need to process
+        any release events. """
+    for button in button_list:
+        if button.pressed:
+            button.on_release()
+
+
+class ConwayWindow(arcade.Window):
+    
 
     def __init__(self, width, height, grid, title):
         
         super().__init__(width, height, title)
 
         self.grid = grid
+        self.gen = 1
+        self.button_list = []
 
+        next_button = NextButton(60, 570, self.display_generations)
+        self.button_list.append(next_button)
 
         arcade.set_background_color(arcade.color.BLACK)
 
@@ -111,107 +237,186 @@ class MyConway(arcade.Window):
                 self.grid_sprite_list.append(sprite)
 
 
-    def resync_grid_with_spritelist(self):
+    def resync_generation_with_spritelist(self, gen):
         self.shape_list = arcade.ShapeElementList()
         
         for row in range(ROW_COUNT):
             for col in range(COLUMN_COUNT):
                 pos = row * COLUMN_COUNT + col
         
-                if self.grid[row][col] == 0:
-                    
+                if self.grid[gen][row][col] == 0:
                     self.grid_sprite_list[pos].color = arcade.color.WHITE
-                else:
+                elif self.grid[gen][row][col] == 1:
                     self.grid_sprite_list[pos].color = arcade.color.GREEN
 
+    def display_generations(self):     
+        self.resync_generation_with_spritelist(self.gen)
+        self.gen += 1
+     
+        
     def on_draw(self):
         arcade.start_render()
         
         self.grid_sprite_list.draw()
+        for button in self.button_list:
+            button.draw()
         
-#If speed becomes an issue change from IF statements to loop that checks if equal 1 then appends to neighbours list
-def findNeighbours(grid, row, col):
-    neighbourCount = 0
-    try:
-        if grid[row - 1][col - 1] == 1:
-            neighbourCount += 1
-            
-        if grid[row - 1][col] == 1:
-            neighbourCount += 1
-            
-        if grid[row - 1][col + 1] == 1:
-            neighbourCount += 1
+    #Button stuff
+    def on_mouse_press(self, x, y, button, key_modifiers):
+        """
+        Called when the user presses a mouse button.
+        """
+        check_mouse_press_for_buttons(x, y, self.button_list)
 
-        if grid[row][col - 1] == 1:
-            neighbourCount += 1
+    def on_mouse_release(self, x, y, button, key_modifiers):
+        """
+        Called when a user releases a mouse button.
+        """
+        check_mouse_release_for_buttons(x, y, self.button_list)
+
+
+
+
+
+
+class Conway():
+
+    def __init__(self, grid):
+        self.grid = grid
+
+
+    def conwayIteration(self):
+
+        _changedGrid = []
         
-        if grid[row][col + 1] == 1:
-            neighbourCount += 1
+        for row in range(ROW_COUNT):
 
-        if grid[row + 1][col - 1] == 1:
-            neighbourCount += 1
+            _changedGrid.append([])
+            for col in range(COLUMN_COUNT):
+                _changedGrid[row].append(0)
+
+        #print(_changedGrid)
+        #print("Changed Grid")
+        
+        for row in range(ROW_COUNT):
+            for col in range(COLUMN_COUNT):
+
+                cellStatus = self.findNeighbours(row, col)
+                
+                #change these to if statements back to 0
+                if cellStatus == 'underpopulation':
+                    _changedGrid[row][col] = 0
+
+                elif cellStatus == 'overcrowding':
+                    _changedGrid[row][col] = 0
+                    
+
+                elif cellStatus == 'reproduction' or cellStatus == 'survival':
+                    _changedGrid[row][col] = 1
+                    
+        self.grid = _changedGrid
+        
+        #for row in range(25):
+        
+            #print(self.grid[row])
+
+        #for row in range(25):
+        
+            #print(_changedGrid[row])
+
+        
+        
+    def findNeighbours(self, row, col):
+        neighbourCount = 0
+        try:
+            if self.grid[row - 1][col - 1] == 1:
+                neighbourCount += 1
+                
+            if self.grid[row - 1][col] == 1:
+                neighbourCount += 1
+                
+            if self.grid[row - 1][col + 1] == 1:
+                neighbourCount += 1
+
+            if self.grid[row][col - 1] == 1:
+                neighbourCount += 1
             
-        if grid[row + 1][col] == 1:
-            neighbourCount += 1
-            
-        if grid[row + 1][col + 1] == 1:
-            neighbourCount += 1
-    except:
-        pass
+            if self.grid[row][col + 1] == 1:
+                neighbourCount += 1
 
-    if neighbourCount < 2:
-        result = 'underpopulation'
-    elif neighbourCount == 2:
-        result = 'survival'
-    elif neighbourCount > 3:
-        result = 'overcrowding'
-    elif neighbourCount == 3:
-        result = 'reproduction' 
-
-    return result #Return int code values instead if speed becomes an issue
-
-#def checkCell(self):
-
-def startingBoard():
-    grid = MyBoard(SCREEN_WIDTH, SCREEN_HEIGHT, "Conway's Game of Life | Starting Grid")
-    arcade.run()
-    return grid.grid
+            if self.grid[row + 1][col - 1] == 1:
+                neighbourCount += 1
+                
+            if self.grid[row + 1][col] == 1:
+                neighbourCount += 1
+                
+            if self.grid[row + 1][col + 1] == 1:
+                neighbourCount += 1
+        except:
+            pass
 
 
-def conwayIteration(grid):
+
+        if self.grid[row][col] == 1 and neighbourCount == 2 or neighbourCount == 3:
+            result = 'survival'
+
+        elif self.grid[row][col] == 1 and neighbourCount > 3:
+            result = 'overpopulation'
+
+        elif self.grid[row][col] == 0 and neighbourCount == 3:
+            result = 'reproduction'
+
+        else:
+            result = 'underpopulation'
+
     
-    for row in range(ROW_COUNT):
-        for col in range(COLUMN_COUNT):
+        return result #Return int code values instead if speed becomes an issue
+    
+def iterGen(grid, noOfGen):
 
-            cellStatus = findNeighbours(grid, row, col)
-            #print(cellStatus)
-            if cellStatus == 'underpopulation' or cellStatus == 'overcrowding':
-                grid[row][col] = 0
+    conwayGenerations = []
 
-            elif cellStatus == 'reproduction':
-                grid[row][col] = 1
+    game = Conway(grid)
+
+    for gen in range(int(noOfGen)):
+        game.conwayIteration()
+        conwayGenerations.append(game.grid)
+
+    
+    return conwayGenerations
+
+
+def displayMatrix(grid, gens, noOfColumns):
+
+    for gen in range(int(gens)):
+        print("\n\nGeneration: " + str(gen) + "\n\n")
+        for row in range(int(noOfColumns)):
+            print(grid[gen][row])
+
 
 
 def main():
-
     startingGrid = startingBoard()
+
+    noOfGens = input("Please input the number of generations: ") 
+    #noOfGens = 6
+    generations = iterGen(startingGrid, noOfGens)
+    #displayMatrix(generations, noOfGens, ROW_COUNT)
+    board = ConwayWindow(SCREEN_WIDTH, SCREEN_HEIGHT, generations, SCREEN_TITLE)
+
+
+    
+    board.resync_generation_with_spritelist(0)
+    arcade.run()
+         
+    
+
+
         
-    board = MyConway(SCREEN_WIDTH, SCREEN_HEIGHT, startingGrid, SCREEN_TITLE)
-
-    
-    #board.resync_grid_with_spritelist()
-    #arcade.run()
-
-    for x in range(10):
-        conwayIteration(board.grid)
- 
-        board.resync_grid_with_spritelist()
-        board.on_draw()
-        arcade.run()
-
-    
-    
 
 
 if __name__ == "__main__":
     main()
+
+
+    
