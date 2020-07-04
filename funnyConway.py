@@ -209,10 +209,7 @@ class MyConway(arcade.Window):
             result = 'reproduction' 
 
         return result #Return int code values instead if speed becomes an issue
-
-
-
-                
+               
 
     def on_draw(self):
         arcade.start_render()
