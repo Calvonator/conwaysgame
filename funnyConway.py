@@ -219,7 +219,12 @@ class MyConway(arcade.Window):
         
         self.grid_sprite_list.draw()
         #arcade.finish_render()
-          
+
+        
+def startingBoard():
+    grid = MyBoard(SCREEN_WIDTH, SCREEN_HEIGHT, "Conway's Game of Life | Starting Grid")
+    arcade.run()
+    return grid.grid          
           
 
 def main():
@@ -232,7 +237,7 @@ def main():
     #board.resync_grid_with_spritelist()
     #arcade.run()
     arcade.start_render()
-    for x in range(3):
+    for _ in range(3):
     
         board.conwayIteration()
         board.resync_grid_with_spritelist()

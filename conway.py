@@ -292,7 +292,7 @@ class Conway():
         for row in range(ROW_COUNT):
 
             _changedGrid.append([])
-            for col in range(COLUMN_COUNT):
+            for _ in range(COLUMN_COUNT):
                 _changedGrid[row].append(0)
 
         #print(_changedGrid)
@@ -378,7 +378,7 @@ def iterGen(grid, noOfGen):
 
     game = Conway(grid)
 
-    for gen in range(int(noOfGen)):
+    for _ in range(int(noOfGen)):
         game.conwayIteration()
         conwayGenerations.append(game.grid)
 
