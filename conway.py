@@ -1,8 +1,8 @@
-import arcade
+import arcade, json
 
 #Number of rows/columns in the grid
-ROW_COUNT = 50
-COLUMN_COUNT = 50
+ROW_COUNT = 100
+COLUMN_COUNT = 100
 
 #The width, height and margin of individual cells
 WIDTH = 15
@@ -393,10 +393,38 @@ def displayMatrix(grid, gens, noOfColumns):
         for row in range(int(noOfColumns)):
             print(grid[gen][row])
 
+def importStartingGrid(location):
+    grid = []
+
+    with open(location, "r") as file:
+        grid = json.load(file)
+            
+    return grid
+
+def saveStartingGrid(grid):
+        with open("file.txt", "w") as f:
+            json.dump(grid, f, indent=2)
 
 
 def main():
-    startingGrid = startingBoard()
+
+    while True:
+        choice = input("Would you like [1] import or [2] generate a starting grid?")
+        if choice == '1':
+            fileLocation = input("Please enter the file locaiton: ")
+            startingGrid = importStartingGrid(fileLocation)
+            break
+
+        elif choice == '2':
+            startingGrid = startingBoard()
+            saveStartingGrid(startingGrid)
+
+            break
+    
+
+
+
+
 
     noOfGens = input("Please input the number of generations: ") 
     #noOfGens = 6
@@ -406,7 +434,7 @@ def main():
 
 
     
-    board.resync_generation_with_spritelist(0)
+    #board.resync_generation_with_spritelist(0)
     arcade.run()
          
     
@@ -417,6 +445,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-    
